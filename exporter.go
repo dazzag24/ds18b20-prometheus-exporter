@@ -95,6 +95,14 @@ func FindAndReadTemperatures(path string) ([]TempReading, error) {
 	return out, err
 }
 
+func getLabelsMap(labels prometheusLabels) map[string][]string {
+	out := make(map[string][]string)
+	for _, label := range labels {
+		out[label.temp_id] = append(out[label.temp_id], fmt.Sprintf("%s=\"%s\"", label.name, label.value))
+	}
+	return out
+}
+
 var prometheusLabelsFlag prometheusLabels
 
 func init() {
@@ -103,10 +111,7 @@ func init() {
 
 func main() {
 	flag.Parse()
-
-	for _, label := range prometheusLabelsFlag {
-		log.Printf("%#v\n", label)
-	}
+	labelMap := getLabelsMap(prometheusLabelsFlag)
 
 	readings, err := FindAndReadTemperatures(*bus_dir)
 	if err != nil {
@@ -114,6 +119,7 @@ func main() {
 	}
 
 	for _, tr := range readings {
-		log.Printf("Read sensor %s = %.2f degress C\n", tr.id, tr.temp_c)
+		labels := strings.Join(labelMap[tr.id], ",")
+		log.Printf("Read sensor %s = %.2f degress C {%s}\n", tr.id, tr.temp_c, labels)
 	}
 }
