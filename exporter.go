@@ -24,7 +24,6 @@ type PrometheusLabel struct {
 type prometheusLabels []PrometheusLabel
 
 // String is the method to format the flag's value, part of the flag.Value interface.
-// The String method's output will be used in diagnostics.
 func (p *prometheusLabels) String() string {
 	return fmt.Sprint(*p)
 }
@@ -43,6 +42,8 @@ func (p *prometheusLabels) Set(value string) error {
 	return nil
 }
 
+// Convert out list of labels into one keyed by thermometer id
+// TODO: Should be done by flag parser
 func getLabelsMap(labels prometheusLabels) map[string][]string {
 	out := make(map[string][]string)
 	for _, label := range labels {
@@ -61,11 +62,12 @@ func main() {
 	flag.Parse()
 	labelMap := getLabelsMap(prometheusLabelsFlag)
 
+	// Main varz handler -- read and parse the temperatures on each request
 	http.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) {
 		readings, err := temperature.FindAndReadTemperatures(*bus_dir)
 		if err != nil {
 			log.Print("Error reading temperatures [%s]", err)
-			// 500
+			// TODO 500
 		}
 
 		for _, tr := range readings {
@@ -78,6 +80,5 @@ func main() {
 		}
 
 	})
-
 	log.Fatal(http.ListenAndServe(fmt.Sprintf(":%d", *port), nil))
 }
