@@ -1,4 +1,4 @@
-package main
+package temperature
 
 import (
 	"errors"
@@ -6,7 +6,6 @@ import (
 	"fmt"
 	"io/ioutil"
 	"log"
-	"net/http"
 	"path/filepath"
 	"strconv"
 	"strings"
@@ -14,7 +13,7 @@ import (
 
 //var bus_dir = flag.String("w1_bus_dir", "/sys/bus/w1/devices", "directory of the 1-wire bus")
 var bus_dir = flag.String("w1_bus_dir", "src/github.com/samkalnins/ds18b20-thermometer-prometheus-exporter/fixtures/w1_devices", "directory of the 1-wire bus")
-var port = flag.Int("port", 8000, "port to run http server on")
+var port = flag.Integer("port", 8000, "port to run http server on")
 
 // temperature_c{location="garden",location_type="outside",sensor="28-0417713760ff"} 20
 
@@ -105,10 +104,6 @@ func getLabelsMap(labels prometheusLabels) map[string][]string {
 	return out
 }
 
-func centigradeToF(c float64) float64 {
-	return c*1.8 + 32
-}
-
 var prometheusLabelsFlag prometheusLabels
 
 func init() {
@@ -119,21 +114,13 @@ func main() {
 	flag.Parse()
 	labelMap := getLabelsMap(prometheusLabelsFlag)
 
-	http.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) {
-		readings, err := FindAndReadTemperatures(*bus_dir)
-		if err != nil {
-			log.Print("Error reading temperatures [%s]", err)
-			// 500
-		}
+	readings, err := FindAndReadTemperatures(*bus_dir)
+	if err != nil {
+		log.Fatal("Error reading temperatures [%s]", err)
+	}
 
-		for _, tr := range readings {
-			labels := strings.Join(append(labelMap[tr.id], fmt.Sprintf("sensor=\"%s\"", tr.id)), ",")
-			log.Printf("Read sensor %s = %.2f degress C {%s}\n", tr.id, tr.temp_c, labels)
-			fmt.Fprintf(w, "temperature_c{%s} %.2f\n", labels, tr.temp_c)
-			fmt.Fprintf(w, "temperature_f{%s} %.2f\n", labels, centigradeToF(tr.temp_c))
-		}
-
-	})
-
-	log.Fatal(http.ListenAndServe(fmt.Sprintf(":%d", *port), nil))
+	for _, tr := range readings {
+		labels := strings.Join(labelMap[tr.id], ",")
+		log.Printf("Read sensor %s = %.2f degress C {%s}\n", tr.id, tr.temp_c, labels)
+	}
 }
