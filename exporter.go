@@ -5,25 +5,30 @@ import (
 	"flag"
 	"io/ioutil"
 	"log"
-	"os"
 	"path/filepath"
 	"strconv"
 	"strings"
 )
 
-//var bus_dir = flag.String("w1_bus_dir", "/sys/devices/w1_bus_master1", "directory of the 1-wire bus")
+//var bus_dir = flag.String("w1_bus_dir", "/sys/bus/w1/devices", "directory of the 1-wire bus")
 var bus_dir = flag.String("w1_bus_dir", "src/github.com/samkalnins/ds18b20-thermometer-prometheus-exporter/fixtures/w1_devices", "directory of the 1-wire bus")
 
-var location = flag.String("location", "default_location", "temperature sensor location text label")
-var location_type = flag.String("location_type", "inside", "temperature sensor location type (inside or outside)")
+// temperature_c{location="garden",location_type="outside",sensor="28-0417713760ff"} 20
 
-func readTemperatureFile(path string) (float64, error) {
+const w1_slave_fname = "w1_slave"
+
+type TempReading struct {
+	id     string
+	temp_c float64
+}
+
+func ReadTemperatureFile(path string) (float64, error) {
 	var temp_c float64
 	var err error
 
 	content, err := ioutil.ReadFile(path)
 	if err != nil {
-		log.Fatal(err)
+		return temp_c, err
 	}
 
 	lines := strings.Split(string(content), "\n")
@@ -39,24 +44,37 @@ func readTemperatureFile(path string) (float64, error) {
 	return temp_c, err
 }
 
-func processPath(path string, info os.FileInfo, err error) error {
-	if strings.HasSuffix(path, "/w1_slave") {
-		p := strings.Split(path, "/")
-		id := p[len(p)-2]
+func FindAndReadTemperatures(path string) ([]TempReading, error) {
+	out := make([]TempReading, 0)
 
-		// Check file path for contents
-		temp_c, err := readTemperatureFile(path)
+	files, err := ioutil.ReadDir(path)
+	if err != nil {
+		log.Printf("Error reading directory %s\n", path)
+		return out, err
+	}
+
+	for _, file := range files {
+		t_file := filepath.Join(path, file.Name(), w1_slave_fname)
+		temp_c, err := ReadTemperatureFile(t_file)
 		if err == nil {
-			log.Printf("Found temp sensor %s (currently %.2f degress C)\n", id, temp_c)
-		} else {
-			log.Printf("Error processing temp sensor %s [%s]\n", id, err)
+			t := TempReading{}
+			t.id = file.Name()
+			t.temp_c = temp_c
+			out = append(out, t)
 		}
 	}
-	return nil
+	return out, err
 }
 
 func main() {
 	flag.Parse()
-	log.Printf("Walking w1 bus dir %s\n", *bus_dir)
-	filepath.Walk(*bus_dir, processPath)
+
+	readings, err := FindAndReadTemperatures(*bus_dir)
+	if err != nil {
+		log.Fatal("Error reading temperatures [%s]", err)
+	}
+
+	for _, tr := range readings {
+		log.Printf("Read sensor %s = %.2f degress C\n", tr.id, tr.temp_c)
+	}
 }
