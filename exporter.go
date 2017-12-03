@@ -3,6 +3,7 @@ package main
 import (
 	"errors"
 	"flag"
+	"fmt"
 	"io/ioutil"
 	"log"
 	"path/filepath"
@@ -20,6 +21,34 @@ const w1_slave_fname = "w1_slave"
 type TempReading struct {
 	id     string
 	temp_c float64
+}
+
+type PrometheusLabel struct {
+	temp_id string
+	name    string
+	value   string
+}
+
+type prometheusLabels []PrometheusLabel
+
+// String is the method to format the flag's value, part of the flag.Value interface.
+// The String method's output will be used in diagnostics.
+func (p *prometheusLabels) String() string {
+	return fmt.Sprint(*p)
+}
+
+// Set is the method to set the flag value, part of the flag.Value interface.
+// Set's argument is a string to be parsed to set the flag.
+// It's a comma-separated list, so we split it.
+func (p *prometheusLabels) Set(value string) error {
+	for _, ls := range strings.Split(value, ",") {
+		s := strings.Split(ls, "=")
+		if len(s) != 3 {
+			errors.New("Bad flag value -- should be temp_id=label=value")
+		}
+		*p = append(*p, PrometheusLabel{s[0], s[1], s[2]})
+	}
+	return nil
 }
 
 func ReadTemperatureFile(path string) (float64, error) {
@@ -66,8 +95,18 @@ func FindAndReadTemperatures(path string) ([]TempReading, error) {
 	return out, err
 }
 
+var prometheusLabelsFlag prometheusLabels
+
+func init() {
+	flag.Var(&prometheusLabelsFlag, "prometheus_labels", "comma-separated list of labels to apply to sensors e.g. sensor_id_1234=label_a=bar,")
+}
+
 func main() {
 	flag.Parse()
+
+	for _, label := range prometheusLabelsFlag {
+		log.Printf("%#v\n", label)
+	}
 
 	readings, err := FindAndReadTemperatures(*bus_dir)
 	if err != nil {
