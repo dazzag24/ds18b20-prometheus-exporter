@@ -11,7 +11,7 @@ import (
 	"strings"
 )
 
-//var bus_dir = flag.String("w1_bus_dir", "/sys/bus/w1/devices", "directory of the 1-wire bus")
+//var bus_dir = flag.String("w1_bus_dir", "/sys/devices/w1_bus_master1", "directory of the 1-wire bus")
 var bus_dir = flag.String("w1_bus_dir", "src/github.com/samkalnins/ds18b20-thermometer-prometheus-exporter/fixtures/w1_devices", "directory of the 1-wire bus")
 
 var location = flag.String("location", "default_location", "temperature sensor location text label")
@@ -57,6 +57,6 @@ func processPath(path string, info os.FileInfo, err error) error {
 
 func main() {
 	flag.Parse()
+	log.Printf("Walking w1 bus dir %s\n", *bus_dir)
 	filepath.Walk(*bus_dir, processPath)
-
 }
