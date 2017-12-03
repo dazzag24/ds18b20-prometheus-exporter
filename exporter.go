@@ -4,26 +4,16 @@ import (
 	"errors"
 	"flag"
 	"fmt"
-	"io/ioutil"
+	"github.com/samkalnins/ds18b20-thermometer-prometheus-exporter/temperature"
+
 	"log"
 	"net/http"
-	"path/filepath"
-	"strconv"
 	"strings"
 )
 
 //var bus_dir = flag.String("w1_bus_dir", "/sys/bus/w1/devices", "directory of the 1-wire bus")
 var bus_dir = flag.String("w1_bus_dir", "src/github.com/samkalnins/ds18b20-thermometer-prometheus-exporter/fixtures/w1_devices", "directory of the 1-wire bus")
 var port = flag.Int("port", 8000, "port to run http server on")
-
-// temperature_c{location="garden",location_type="outside",sensor="28-0417713760ff"} 20
-
-const w1_slave_fname = "w1_slave"
-
-type TempReading struct {
-	id     string
-	temp_c float64
-}
 
 type PrometheusLabel struct {
 	temp_id string
@@ -53,60 +43,12 @@ func (p *prometheusLabels) Set(value string) error {
 	return nil
 }
 
-func ReadTemperatureFile(path string) (float64, error) {
-	var temp_c float64
-	var err error
-
-	content, err := ioutil.ReadFile(path)
-	if err != nil {
-		return temp_c, err
-	}
-
-	lines := strings.Split(string(content), "\n")
-	if strings.HasSuffix(lines[0], "YES") && strings.Contains(lines[1], "t=") {
-		i, err := strconv.ParseFloat(strings.Split(lines[1], "t=")[1], 64)
-		temp_c = i / 1000.0
-		if err != nil {
-			log.Fatal(err)
-		}
-	} else {
-		err = errors.New("Unparseable temperature file")
-	}
-	return temp_c, err
-}
-
-func FindAndReadTemperatures(path string) ([]TempReading, error) {
-	out := make([]TempReading, 0)
-
-	files, err := ioutil.ReadDir(path)
-	if err != nil {
-		log.Printf("Error reading directory %s\n", path)
-		return out, err
-	}
-
-	for _, file := range files {
-		t_file := filepath.Join(path, file.Name(), w1_slave_fname)
-		temp_c, err := ReadTemperatureFile(t_file)
-		if err == nil {
-			t := TempReading{}
-			t.id = file.Name()
-			t.temp_c = temp_c
-			out = append(out, t)
-		}
-	}
-	return out, err
-}
-
 func getLabelsMap(labels prometheusLabels) map[string][]string {
 	out := make(map[string][]string)
 	for _, label := range labels {
 		out[label.temp_id] = append(out[label.temp_id], fmt.Sprintf("%s=\"%s\"", label.name, label.value))
 	}
 	return out
-}
-
-func centigradeToF(c float64) float64 {
-	return c*1.8 + 32
 }
 
 var prometheusLabelsFlag prometheusLabels
@@ -120,19 +62,19 @@ func main() {
 	labelMap := getLabelsMap(prometheusLabelsFlag)
 
 	http.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) {
-		readings, err := FindAndReadTemperatures(*bus_dir)
+		readings, err := temperature.FindAndReadTemperatures(*bus_dir)
 		if err != nil {
 			log.Print("Error reading temperatures [%s]", err)
 			// 500
 		}
 
 		for _, tr := range readings {
-			labels := strings.Join(append(labelMap[tr.id], fmt.Sprintf("sensor=\"%s\"", tr.id)), ",")
-			log.Printf("Read sensor %s = %.2f degress C {%s}\n", tr.id, tr.temp_c, labels)
+			labels := strings.Join(append(labelMap[tr.Id], fmt.Sprintf("sensor=\"%s\"", tr.Id)), ",")
+			log.Printf("Read sensor %s = %.2f degress C {%s}\n", tr.Id, tr.Temp_c, labels)
 
 			// Output varz as both C & F for maximum user happiness
-			fmt.Fprintf(w, "temperature_c{%s} %f\n", labels, tr.temp_c)
-			fmt.Fprintf(w, "temperature_f{%s} %f\n", labels, centigradeToF(tr.temp_c))
+			fmt.Fprintf(w, "temperature_c{%s} %f\n", labels, tr.Temp_c)
+			fmt.Fprintf(w, "temperature_f{%s} %f\n", labels, temperature.CentigradeToF(tr.Temp_c))
 		}
 
 	})
