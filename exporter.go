@@ -129,8 +129,10 @@ func main() {
 		for _, tr := range readings {
 			labels := strings.Join(append(labelMap[tr.id], fmt.Sprintf("sensor=\"%s\"", tr.id)), ",")
 			log.Printf("Read sensor %s = %.2f degress C {%s}\n", tr.id, tr.temp_c, labels)
-			fmt.Fprintf(w, "temperature_c{%s} %.2f\n", labels, tr.temp_c)
-			fmt.Fprintf(w, "temperature_f{%s} %.2f\n", labels, centigradeToF(tr.temp_c))
+
+			// Output varz as both C & F for maximum user happiness
+			fmt.Fprintf(w, "temperature_c{%s} %f\n", labels, tr.temp_c)
+			fmt.Fprintf(w, "temperature_f{%s} %f\n", labels, centigradeToF(tr.temp_c))
 		}
 
 	})
