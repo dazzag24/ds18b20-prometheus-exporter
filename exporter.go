@@ -7,11 +7,12 @@ import (
 	"github.com/samkalnins/ds18b20-thermometer-prometheus-exporter/temperature"
 	"log"
 	"net/http"
+	"path/filepath"
 	"strings"
 )
 
 //var bus_dir = flag.String("w1_bus_dir", "/sys/bus/w1/devices", "directory of the 1-wire bus")
-var bus_dir = flag.String("w1_bus_dir", "src/github.com/samkalnins/ds18b20-thermometer-prometheus-exporter/fixtures/w1_devices", "directory of the 1-wire bus")
+var bus_dir = flag.String("w1_bus_dir", "fixtures/w1_devices", "directory of the 1-wire bus")
 var port = flag.Int("port", 8000, "port to run http server on")
 
 type prometheusLabels map[string][]string
@@ -44,17 +45,19 @@ func (p *prometheusLabels) Set(value string) error {
 var prometheusLabelsFlag prometheusLabels
 
 func init() {
-	flag.Var(&prometheusLabelsFlag, "prometheus_labels", "comma-separated list of labels to apply to sensors e.g. 28-0417713760f=label_a=bar,")
+	flag.Var(&prometheusLabelsFlag, "prometheus_labels", "comma-separated list of labels to apply to sensors by ID e.g. 28-0417713760f=label=value,")
 }
 
 func main() {
 	flag.Parse()
 
+	log.Println(filepath.Abs("./"))
+
 	// Main varz handler -- read and parse the temperatures on each request
 	http.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) {
 		readings, err := temperature.FindAndReadTemperatures(*bus_dir)
 		if err != nil {
-			log.Print("Error reading temperatures [%s]", err)
+			log.Printf("Error reading temperatures [%s]", err)
 			// TODO 500
 		}
 
@@ -65,7 +68,6 @@ func main() {
 			fmt.Fprintf(w, "temperature_c{%s} %f\n", labels, tr.Temp_c)
 			fmt.Fprintf(w, "temperature_f{%s} %f\n", labels, temperature.CentigradeToF(tr.Temp_c))
 		}
-
 	})
 	log.Fatal(http.ListenAndServe(fmt.Sprintf(":%d", *port), nil))
 }

@@ -6,6 +6,7 @@ import (
 	"io/ioutil"
 	"log"
 
+	"fmt"
 	"path/filepath"
 	"strconv"
 	"strings"
@@ -35,17 +36,18 @@ func readTemperatureFile(path string) (float64, error) {
 			log.Fatal(err)
 		}
 	} else {
-		err = errors.New("Unparseable temperature file")
+		err = errors.New("unparseable temperature file")
 	}
 	return temp_c, err
 }
 
 func FindAndReadTemperatures(path string) ([]TempReading, error) {
+	var err error
 	out := make([]TempReading, 0)
 
 	files, err := ioutil.ReadDir(path)
 	if err != nil {
-		log.Printf("Error reading directory %s\n", path)
+		err = errors.New(fmt.Sprintf("error reading directory %s", path))
 		return out, err
 	}
 
