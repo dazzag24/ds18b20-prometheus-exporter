@@ -1,4 +1,4 @@
-package temperature
+package temp
 
 import (
 	"errors"

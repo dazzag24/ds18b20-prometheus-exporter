@@ -4,7 +4,7 @@ import (
 	"errors"
 	"flag"
 	"fmt"
-	"github.com/samkalnins/ds18b20-thermometer-prometheus-exporter/temperature"
+	"github.com/samkalnins/ds18b20-thermometer-prometheus-exporter/temp"
 	"log"
 	"net/http"
 	"path/filepath"
