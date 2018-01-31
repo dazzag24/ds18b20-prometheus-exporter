@@ -4,7 +4,7 @@ import (
 	"errors"
 	"flag"
 	"fmt"
-	"github.com/samkalnins/ds18b20-thermometer-prometheus-exporter/temp"
+	"github.com/samkalnins/ds18b20-prometheus-exporter/temp"
 	"log"
 	"net/http"
 	"path/filepath"
@@ -55,7 +55,7 @@ func main() {
 
 	// Main varz handler -- read and parse the temperatures on each request
 	http.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) {
-		readings, err := temperature.FindAndReadTemperatures(*bus_dir)
+		readings, err := temp.FindAndReadTemperatures(*bus_dir)
 		if err != nil {
 			log.Printf("Error reading temperatures [%s]", err)
 			// TODO 500
@@ -66,7 +66,7 @@ func main() {
 
 			// Output varz as both C & F for maximum user happiness
 			fmt.Fprintf(w, "temperature_c{%s} %f\n", labels, tr.Temp_c)
-			fmt.Fprintf(w, "temperature_f{%s} %f\n", labels, temperature.CentigradeToF(tr.Temp_c))
+			fmt.Fprintf(w, "temperature_f{%s} %f\n", labels, temp.CentigradeToF(tr.Temp_c))
 		}
 	})
 	log.Fatal(http.ListenAndServe(fmt.Sprintf(":%d", *port), nil))
