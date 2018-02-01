@@ -20,7 +20,8 @@ You most likely want to include extra label metadata to which Prometheus can use
 
 Find the unique serial numbers of your sensors in `/sys/bus/w1/devices` and include a list of labels like this:
 
-    $ temp_exporter --port 8000 --prometheus_labels "28-0416a4a474ff=location=lounge,"28-0417713760ff"=location=garden"
+    $ temp_exporter --port 8000 \
+      --prometheus_labels "28-0416a4a474ff=location=lounge,"28-0417713760ff"=location=garden"
 
 
 ## Varz Output Format
@@ -34,7 +35,7 @@ Find the unique serial numbers of your sensors in `/sys/bus/w1/devices` and incl
 
 ## Compatible Sensors
 
-http://amzn.to/2jGRjKO
+[Amazon](http://amzn.to/2jGRjKO)
 
 
 ## Author
@@ -44,4 +45,4 @@ http://amzn.to/2jGRjKO
 
 ## License
 
-Licensed under MIT License.
+ds18b20-prometheus-exporter is licensed under the MIT License.
