@@ -25,7 +25,7 @@ Find the unique serial numbers of your sensors in `/sys/bus/w1/devices` and incl
 
 ## Varz Output Format
 
-    $ curl http://localhost:8000/varz
+    $ curl http://localhost:8000
     temperature_c{location="lounge",sensor="28-0416a4a474ff"} 18.437000
     temperature_f{location="lounge",sensor="28-0416a4a474ff"} 65.186600
     temperature_c{location="garden",sensor="28-0417713760ff"} 12.500000
