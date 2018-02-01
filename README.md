@@ -6,12 +6,13 @@ Use this to export current temperature data from connected sensors into [Prometh
 
 
 ## Usage
-
+   
+    $ cd $GOPATH
     $ go get github.com/samkalnins/ds18b20-prometheus-exporter
-    $ go install github.com/samkalnins/ds18b20-prometheus-exporter/temp_exporter.go
+    $ go install src/github.com/samkalnins/ds18b20-prometheus-exporter/temp_exporter.go
 
-    (Assuming $GOPATH/bin is in your PATH):
-    $ temp_exporter --port 8000
+    $ cd $GOBIN
+    $ ./temp_exporter --port 8000
 
 
 ## Applying labels to Individual Sensors

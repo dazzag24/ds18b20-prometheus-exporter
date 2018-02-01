@@ -11,8 +11,7 @@ import (
 	"strings"
 )
 
-//var bus_dir = flag.String("w1_bus_dir", "/sys/bus/w1/devices", "directory of the 1-wire bus")
-var bus_dir = flag.String("w1_bus_dir", "fixtures/w1_devices", "directory of the 1-wire bus")
+var bus_dir = flag.String("w1_bus_dir", "/sys/bus/w1/devices", "directory of the 1-wire bus")
 var port = flag.Int("port", 8000, "port to run http server on")
 
 type prometheusLabels map[string][]string
