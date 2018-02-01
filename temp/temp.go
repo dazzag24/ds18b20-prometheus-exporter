@@ -19,7 +19,7 @@ type TempReading struct {
 	Temp_c float64
 }
 
-func readTemperatureFile(path string) (float64, error) {
+func ReadTemperatureFile(path string) (float64, error) {
 	var temp_c float64
 	var err error
 
@@ -53,7 +53,7 @@ func FindAndReadTemperatures(path string) ([]TempReading, error) {
 
 	for _, file := range files {
 		t_file := filepath.Join(path, file.Name(), w1_slave_fname)
-		temp_c, err := readTemperatureFile(t_file)
+		temp_c, err := ReadTemperatureFile(t_file)
 		if err == nil {
 			out = append(out, TempReading{file.Name(), temp_c})
 		}
