@@ -7,11 +7,9 @@ Use this to export current temperature data from connected sensors into [Prometh
 
 ## Usage
 
-    $ cd $GOPATH
-    $ go get -u github.com/samkalnins/ds18b20-prometheus-exporter
-    $ go install src/github.com/samkalnins/ds18b20-prometheus-exporter/temp_exporter.go
-    $ $GOBIN/temp_exporter --port 8000
-
+```
+env GOOS=linux GOARCH=arm GOARM=6 go build -ldflags="-s -w"
+```
 
 ## Applying labels to Individual Sensors
 
@@ -35,11 +33,6 @@ Find the unique serial numbers of your sensors in `/sys/bus/w1/devices` and incl
 ## Compatible Sensors
 
 [Amazon](http://amzn.to/2jGRjKO)
-
-
-## Author
-
-[Sam Kalnins](https://github.com/samkalnins)
 
 
 ## License

@@ -1,17 +1,17 @@
 package main
 
 import (
+	"ds18b20_prometheus_exporter/temp"
 	"errors"
 	"flag"
 	"fmt"
-	"github.com/samkalnins/ds18b20-prometheus-exporter/temp"
 	"log"
 	"net/http"
 	"strings"
 )
 
 var bus_dir = flag.String("w1_bus_dir", "/sys/bus/w1/devices", "directory of the 1-wire bus")
-var port = flag.Int("port", 8000, "port to run http server on")
+var port = flag.Int("port", 9442, "port to run http server on")
 
 type prometheusLabels map[string][]string
 
@@ -54,16 +54,16 @@ func main() {
 		readings, err := temp.FindAndReadTemperatures(*bus_dir)
 		if err != nil {
 			log.Printf("Error reading temperatures [%s]", err)
-			// TODO: 500
+			http.Error(w, "Internal Server Error: Error reading temperatures", 500)
 		}
 
 		for _, tr := range readings {
 			labels := strings.Join(append(prometheusLabelsFlag[tr.Id], fmt.Sprintf("sensor=\"%s\"", tr.Id)), ",")
-
-			// Output varz as both C & F for maximum user happiness
 			fmt.Fprintf(w, "temperature_c{%s} %f\n", labels, tr.Temp_c)
-			fmt.Fprintf(w, "temperature_f{%s} %f\n", labels, temp.CentigradeToF(tr.Temp_c))
 		}
 	})
+
+	log.Printf("ds18b20 Prometheus Exporter Listening on port [%d]", *port)
+
 	log.Fatal(http.ListenAndServe(fmt.Sprintf(":%d", *port), nil))
 }
