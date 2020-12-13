@@ -29,7 +29,7 @@ func (p *prometheusLabels) Set(value string) error {
 	for _, ls := range strings.Split(value, ",") {
 		s := strings.Split(ls, "=")
 		if len(s) != 3 {
-			errors.New("Bad flag value -- should be temp_id=label=value")
+			return errors.New("Bad flag value -- should be onewire_sensor_id=label=value")
 		}
 		_, initialized := (*p)[s[0]]
 		if !initialized {
@@ -50,7 +50,7 @@ func main() {
 	flag.Parse()
 
 	// Main varz handler -- read and parse the temperatures on each request
-	http.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) {
+	http.HandleFunc("/metrics", func(w http.ResponseWriter, r *http.Request) {
 		readings, err := temp.FindAndReadTemperatures(*bus_dir)
 		if err != nil {
 			log.Printf("Error reading temperatures [%s]", err)
@@ -59,8 +59,20 @@ func main() {
 
 		for _, tr := range readings {
 			labels := strings.Join(append(prometheusLabelsFlag[tr.Id], fmt.Sprintf("sensor=\"%s\"", tr.Id)), ",")
-			fmt.Fprintf(w, "temperature_c{%s} %f\n", labels, tr.Temp_c)
+			w.Write([]byte(`# HELP ds18b20_temperature_celsius Dallas DS18B20 Thermometer temperature in degrees celsius (°C).
+# TYPE ds18b20_temperature_celsius gauge`))
+			fmt.Fprintf(w, "\nds18b20_temperature_celsius{%s} %f\n", labels, tr.Temp_c)
 		}
+	})
+
+	http.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) {
+		w.Write([]byte(`<html>
+<head><title>Dallas DS18B20 Thermometer Prometheus Exporter</title></head>
+<body>
+<h1>Dallas DS18B20 Thermometer Prometheus Exporter</h1>
+<p><a href="/metrics">Metrics</a></p>
+</body>
+</html>`))
 	})
 
 	log.Printf("ds18b20 Prometheus Exporter Listening on port [%d]", *port)
