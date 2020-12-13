@@ -57,14 +57,16 @@ func main() {
 			http.Error(w, "Internal Server Error: Error reading temperatures", 500)
 		}
 
+		fmt.Fprintf(w, "# HELP ds18b20_temperature_celsius Dallas DS18B20 OneWire temperature in °C.\n")
+		fmt.Fprintf(w, "# TYPE ds18b20_temperature_celsius gauge\n")
+
 		for _, tr := range readings {
 			labels := strings.Join(append(prometheusLabelsFlag[tr.Id], fmt.Sprintf("sensor=\"%s\"", tr.Id)), ",")
-			w.Write([]byte(`# HELP ds18b20_temperature_celsius Dallas DS18B20 Thermometer temperature in degrees celsius (°C).
-# TYPE ds18b20_temperature_celsius gauge`))
-			fmt.Fprintf(w, "\nds18b20_temperature_celsius{%s} %f\n", labels, tr.Temp_c)
+			fmt.Fprintf(w, "ds18b20_temperature_celsius{%s} %f\n", labels, tr.Temp_c)
 		}
 	})
 
+	// Index page
 	http.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) {
 		w.Write([]byte(`<html>
 <head><title>Dallas DS18B20 Thermometer Prometheus Exporter</title></head>
